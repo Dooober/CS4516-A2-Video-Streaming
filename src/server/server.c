@@ -41,9 +41,12 @@ int main(int argc, char* argv[]) {
         struct client_info info;
         info.sockfd = accept(rtsp_sockfd, (struct sockaddr*) &address, &addrlen);
         if (info.sockfd >= 0) {
+            printf("Client connected\n");
             server_worker_run(&info);
         }
     }
+
+    //close(rtsp_sockfd);
 
     return 0;
 }

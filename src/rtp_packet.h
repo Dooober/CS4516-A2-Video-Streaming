@@ -1,3 +1,6 @@
+#ifndef __RTP_PACKET_H__
+#define __RTP_PACKET_H__
+
 #include <time.h>
 
 #define HEADER_SIZE 12
@@ -15,3 +18,5 @@ int version(rtp_packet_t *packet);
 int seq_num(rtp_packet_t *packet);
 int timestamp(rtp_packet_t *packet);
 int payload_type(rtp_packet_t *packet);
+
+#endif

@@ -1,10 +1,7 @@
+#ifndef __CLIENT_H__
+#define __CLIENT_H__
+
 #include <sys/socket.h>
-#include <errno.h>
-#include <string.h>
-#include <netinet/in.h>
-#include <stdio.h>
-
-
 #include "../enums.h"
 
 struct client {
@@ -21,4 +18,10 @@ struct client {
     int sockfd;
 };
 
-struct client* create_client(char* server_addr, int server_port, int rtp_port, char* filename);
+struct client create_client(char* server_addr, int server_port, int rtp_port, char* filename);
+void setup_movie(struct client* client);
+void exit_client();
+void pause_movie(struct client* client);
+void play_movie(struct client* client);
+
+#endif

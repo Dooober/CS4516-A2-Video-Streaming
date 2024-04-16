@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "client.h"
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 
@@ -39,11 +41,56 @@ SDL_Window* create_window() {
     return window;
 }
 
+/*
+	def createWidgets(self):
+		"""Build GUI."""
+		# Create Setup button
+		self.setup = Button(self.master, width=20, padx=3, pady=3)
+		self.setup["text"] = "Setup"
+		self.setup["command"] = self.setupMovie
+		self.setup.grid(row=1, column=0, padx=2, pady=2)
+		
+		# Create Play button		
+		self.start = Button(self.master, width=20, padx=3, pady=3)
+		self.start["text"] = "Play"
+		self.start["command"] = self.playMovie
+		self.start.grid(row=1, column=1, padx=2, pady=2)
+		
+		# Create Pause button			
+		self.pause = Button(self.master, width=20, padx=3, pady=3)
+		self.pause["text"] = "Pause"
+		self.pause["command"] = self.pauseMovie
+		self.pause.grid(row=1, column=2, padx=2, pady=2)
+		
+		# Create Teardown button
+		self.teardown = Button(self.master, width=20, padx=3, pady=3)
+		self.teardown["text"] = "Teardown"
+		self.teardown["command"] =  self.exitClient
+		self.teardown.grid(row=1, column=3, padx=2, pady=2)
+		
+		# Create a label to display the movie
+		self.label = Label(self.master, height=19)
+		self.label.grid(row=0, column=0, columnspan=4, sticky=W+E+N+S, padx=5, pady=5) 
+*/
+void create_widgets(struct nk_context* ctx, struct client* client) {
+	nk_layout_row_static(ctx, 30, 80, 4);
+	if (nk_button_label(ctx, "Setup"))
+		setup_movie(client);
+	if (nk_button_label(ctx, "Play"))
+		play_movie(client);
+	if (nk_button_label(ctx, "Pause"))
+		pause_movie(client);
+	if (nk_button_label(ctx, "Teardown"))
+		exit_client(client);
+
+    nk_layout_row_static(ctx, 540, 960, 1);
+}
+
 
 /*
     The main GUI loop
 */
-void run(struct nk_context* ctx, SDL_Window* window) {
+void run(struct client* client, struct nk_context* ctx, SDL_Window* window) {
     int running = 1;
     int win_width, win_height;
     struct nk_colorf bg;
@@ -67,32 +114,7 @@ void run(struct nk_context* ctx, SDL_Window* window) {
             NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
             NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
         {
-            enum {EASY, HARD};
-            static int op = EASY;
-            static int property = 20;
-            
-            nk_layout_row_static(ctx, 30, 80, 1);
-            if (nk_button_label(ctx, "button"))
-                fprintf(stdout, "button pressed\n");
-            nk_layout_row_dynamic(ctx, 30, 2);
-            if (nk_option_label(ctx, "easy", op == EASY)) op = EASY;
-            if (nk_option_label(ctx, "hard", op == HARD)) op = HARD;
-            nk_layout_row_dynamic(ctx, 25, 1);
-            nk_property_int(ctx, "Compression:", 0, &property, 100, 10, 1);
-
-            nk_layout_row_dynamic(ctx, 20, 1);
-            nk_label(ctx, "background:", NK_TEXT_LEFT);
-            nk_layout_row_dynamic(ctx, 25, 1);
-            if (nk_combo_begin_color(ctx, nk_rgb_cf(bg), nk_vec2(nk_widget_width(ctx),400))) {
-                nk_layout_row_dynamic(ctx, 120, 1);
-                bg = nk_color_picker(ctx, bg, NK_RGBA);
-                nk_layout_row_dynamic(ctx, 25, 1);
-                bg.r = nk_propertyf(ctx, "#R:", 0, bg.r, 1.0f, 0.01f,0.005f);
-                bg.g = nk_propertyf(ctx, "#G:", 0, bg.g, 1.0f, 0.01f,0.005f);
-                bg.b = nk_propertyf(ctx, "#B:", 0, bg.b, 1.0f, 0.01f,0.005f);
-                bg.a = nk_propertyf(ctx, "#A:", 0, bg.a, 1.0f, 0.01f,0.005f);
-                nk_combo_end(ctx); 
-            }
+            create_widgets(ctx, client);
         }
         nk_end(ctx);
         
@@ -116,8 +138,7 @@ int main(int argc, char* argv[]) {
     char* server_addr = argv[1];
     int server_port = atoi(argv[2]);
     int rtp_port = atoi(argv[3]);
-    char* file_name = argv[4];
-
+    char* filename = argv[4];
 
     // Startup 
 
@@ -129,9 +150,11 @@ int main(int argc, char* argv[]) {
     nk_sdl_font_stash_begin(&atlas);
     nk_sdl_font_stash_end();
 
-    // Run app
+    // Create client and run app
 
-    run(ctx, window);
+    struct client client = create_client(server_addr, server_port, rtp_port, filename);
+
+    run(&client, ctx, window);
 
     // Shutdown
 
@@ -141,12 +164,3 @@ int main(int argc, char* argv[]) {
     SDL_Quit();
     return 0;
 }
-
-/*
-	root = Tk()
-	
-	# Create a new client
-	app = Client(root, serverAddr, serverPort, rtpPort, fileName)
-	app.master.title("RTPClient")	
-	root.mainloop()
-*/

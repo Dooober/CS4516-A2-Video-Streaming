@@ -14,7 +14,7 @@ struct server_worker* server_worker_init(struct client_info *info) {
 */
 void server_worker_run(struct client_info *info) {
     struct server_worker *worker = server_worker_init(info);
-    printf("A client says hi!");
+    printf("A client says hi!\n");
 }
 
 /*

@@ -1,15 +1,47 @@
 #include "client.h"
 
+#include <arpa/inet.h>
+#include <errno.h>
+#include <string.h>
+#include <netinet/in.h>
+#include <stdio.h>
+
 #define CACHE_FILE_NAME "cache-"
 #define CACHE_FILE_EXT ".jpg"
 
+/*
+	Private functions
+*/
+
+int connect_to_server(struct client* client);
+void create_widgets(struct client* client);
+void setup_movie(struct client* client);
+void exit_client();
+void pause_movie(struct client* client);
+void play_movie(struct client* client);
 
 /*
-	# Initiation..
-	def __init__(self, master, serveraddr, serverport, rtpport, filename):
-		self.master = master
-		self.master.protocol("WM_DELETE_WINDOW", self.handler)
+Create an initialize a client app
 */
+struct client create_client(char* server_addr, int server_port, int rtp_port, char* filename) {
+	struct client client;
+	client.server_addr = server_addr;
+	client.server_port = server_port;
+	client.rtp_port = rtp_port;
+	client.filename = filename;
+
+	client.rtsp_seq = 0;
+	client.session_id = 0;
+	client.request_sent = -1;
+	client.teardown_acked = 0;
+
+	connect_to_server(&client);
+
+	client.frame_num = 0;
+	client.state = INIT;
+
+	return client;
+}
 
 /*
 	Connect to the server. Start a new RTSP/TCP session.
@@ -20,10 +52,17 @@ int connect_to_server(struct client* client) {
         printf("Socket creation failed: %s\n", strerror(errno));
         return -1;
     }
-	
+
 	struct sockaddr_in dest_addr;
 	dest_addr.sin_family = AF_INET;
 	dest_addr.sin_port = htons(client->server_port);
+	printf("Connecting...\n");
+
+	if (inet_pton(AF_INET, client->server_addr, &dest_addr.sin_addr) <= 0) {
+        printf("Invalid address");
+        return -1;
+	}
+	
 
 	if (connect(sockfd, (struct sockaddr*) &dest_addr, sizeof(dest_addr))) {
         printf("Failed to connect to server: %s\n", strerror(errno));
@@ -31,67 +70,6 @@ int connect_to_server(struct client* client) {
 	};
 
 	client->sockfd = sockfd;
-}
-
-/*
-Create an initialize a client app
-*/
-struct client* create_client(char* server_addr, int server_port, int rtp_port, char* filename) {
-	struct client *client;
-	client->server_addr = server_addr;
-	client->server_port = server_port;
-	client->rtp_port = rtp_port;
-	client->filename = filename;
-
-	//create_widgets();
-
-	client->rtsp_seq = 0;
-	client->session_id = 0;
-	client->request_sent = -1;
-	client->teardown_acked = 0;
-
-	connect_to_server(client);
-
-	client->frame_num = 0;
-	client->state = INIT;
-
-	return client;
-}
-
-/*
-	def createWidgets(self):
-		"""Build GUI."""
-		# Create Setup button
-		self.setup = Button(self.master, width=20, padx=3, pady=3)
-		self.setup["text"] = "Setup"
-		self.setup["command"] = self.setupMovie
-		self.setup.grid(row=1, column=0, padx=2, pady=2)
-		
-		# Create Play button		
-		self.start = Button(self.master, width=20, padx=3, pady=3)
-		self.start["text"] = "Play"
-		self.start["command"] = self.playMovie
-		self.start.grid(row=1, column=1, padx=2, pady=2)
-		
-		# Create Pause button			
-		self.pause = Button(self.master, width=20, padx=3, pady=3)
-		self.pause["text"] = "Pause"
-		self.pause["command"] = self.pauseMovie
-		self.pause.grid(row=1, column=2, padx=2, pady=2)
-		
-		# Create Teardown button
-		self.teardown = Button(self.master, width=20, padx=3, pady=3)
-		self.teardown["text"] = "Teardown"
-		self.teardown["command"] =  self.exitClient
-		self.teardown.grid(row=1, column=3, padx=2, pady=2)
-		
-		# Create a label to display the movie
-		self.label = Label(self.master, height=19)
-		self.label.grid(row=0, column=0, columnspan=4, sticky=W+E+N+S, padx=5, pady=5) 
-*/
-
-void create_widgets() {
-
 }
 
 /*
@@ -163,19 +141,6 @@ void write_frame() {
 void update_movie() {
 
 }
-
-/*
-	def connectToServer(self):
-		"""Connect to the Server. Start a new RTSP/TCP session."""
-		#Fill in start
-		#Create a socket
-		self.rtspSocket = ....
-		try:
-			#make a connection to the serverAddress and port number
-			#....
-		except:
-			messagebox.showwarning('Connection Failed', 'Connection to \'%s\' failed.' %self.serverAddr)
-*/
 
 /*
 def sendRtspRequest(self, requestCode):
@@ -374,7 +339,7 @@ void setup_movie(struct client* client) {
 	Teardown button handler
 */
 void exit_client() {
-
+	
 }
 
 /*

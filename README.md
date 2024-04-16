@@ -3,7 +3,6 @@
 ## TODO
 
 ### Skeleton
-- client_launcher.c
 - client.c
 - client.h
 - server_worker.c
