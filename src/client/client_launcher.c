@@ -19,23 +19,11 @@
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
 
-
-int main(int argc, char* argv[]) {
-    if (argc != 5) {
-        printf("Usage: client [Server Name] [Server Port] [RTP Port] [Video File]\n");
-        return -1;
-    }
-
-    char* server_addr = argv[1];
-    int server_port = atoi(argv[2]);
-    int rtp_port = atoi(argv[3]);
-    char* file_name = argv[4];
-
-    // Using SDL to create a window, following the sdl_opengl2 demo in Nuklear
+/*
+    Using SDL to create a window, following the sdl_opengl2 demo in Nuklear
+*/
+SDL_Window* create_window() {
     SDL_Window *window;
-    SDL_GLContext glContext;
-    int win_width, win_height;
-    int running = 1;
 
     SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0");
     SDL_Init(SDL_INIT_VIDEO);
@@ -47,22 +35,22 @@ int main(int argc, char* argv[]) {
     window = SDL_CreateWindow("Demo",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_ALLOW_HIGHDPI);
-    glContext = SDL_GL_CreateContext(window);
+
+    return window;
+}
+
+
+/*
+    The main GUI loop
+*/
+void run(struct nk_context* ctx, SDL_Window* window) {
+    int running = 1;
+    int win_width, win_height;
+    struct nk_colorf bg;
+    bg.r = 0.10f, bg.g = 0.18f, bg.b = 0.24f, bg.a = 1.0f;
+
     SDL_GetWindowSize(window, &win_width, &win_height);
 
-    // Using Nuklear to create a GUI
-    struct nk_context *ctx;
-    struct nk_colorf bg;
-
-    ctx = nk_sdl_init(window);
-    {struct nk_font_atlas *atlas;
-    nk_sdl_font_stash_begin(&atlas);
-    struct nk_font *roboto = nk_font_atlas_add_from_file(atlas, "Roboto-Regular.ttf", 16, 0);
-    nk_sdl_font_stash_end();
-    /*nk_style_load_all_cursors(ctx, atlas->cursors);*/
-    nk_style_set_font(ctx, &roboto->handle);}
-
-    bg.r = 0.10f, bg.g = 0.18f, bg.b = 0.24f, bg.a = 1.0f;
     while (running)
     {
         /* Input */
@@ -117,6 +105,35 @@ int main(int argc, char* argv[]) {
         nk_sdl_render(NK_ANTI_ALIASING_ON);
         SDL_GL_SwapWindow(window);
     }
+}
+
+int main(int argc, char* argv[]) {
+    if (argc != 5) {
+        printf("Usage: client [Server Name] [Server Port] [RTP Port] [Video File]\n");
+        return -1;
+    }
+
+    char* server_addr = argv[1];
+    int server_port = atoi(argv[2]);
+    int rtp_port = atoi(argv[3]);
+    char* file_name = argv[4];
+
+
+    // Startup 
+
+    SDL_Window *window = create_window();
+    SDL_GLContext glContext = SDL_GL_CreateContext(window);
+
+    struct nk_context* ctx = nk_sdl_init(window);
+    struct nk_font_atlas *atlas;
+    nk_sdl_font_stash_begin(&atlas);
+    nk_sdl_font_stash_end();
+
+    // Run app
+
+    run(ctx, window);
+
+    // Shutdown
 
     nk_sdl_shutdown();
     SDL_GL_DeleteContext(glContext);
