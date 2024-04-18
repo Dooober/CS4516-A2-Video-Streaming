@@ -33,11 +33,12 @@ class ServerWorker:
 		while True:   
 			try:         
 				data = connSocket.recv(256).decode()
+				if data:
+					print("Data received:\n" + data)
+					self.processRtspRequest(data)
 			except ConnectionResetError:
-   				print("xy: Connection reset by peer")
-			if data:
-				print("Data received:\n" + data)
-				self.processRtspRequest(data)
+				print("xy: Connection reset by peer")
+				break
 	
 	def processRtspRequest(self, data):
 		"""Process RTSP request sent from the client."""
@@ -49,7 +50,7 @@ class ServerWorker:
 		
 		# Fill in start
 		# Get the media file name
-		# filename = ....
+		filename = line1[1]
 		# Fill in end
 
 		# Get the RTSP sequence number 
@@ -76,7 +77,8 @@ class ServerWorker:
 
 				# Fill in start
 				# Get the RTP/UDP port used by client from the last line of client request
-				# self.clientInfo['rtpPort'] = ....
+				transport = request[2].split(' ')
+				self.clientInfo['rtpPort'] = transport[3]
 				print("xy: self.clientInfo['rtpPort']", self.clientInfo['rtpPort'])
 				# Fill in end
 				
@@ -88,7 +90,7 @@ class ServerWorker:
 				
 				# Fill in start
 				# Create a new socket for RTP based on UDP
-				# self.clientInfo["rtpSocket"] = ...
+				self.clientInfo["rtpSocket"] = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 				# Fill in end
 				
 				self.replyRtsp(self.OK_200, seq[1])
@@ -150,6 +152,7 @@ class ServerWorker:
 					self.clientInfo['rtpSocket'].sendto(self.makeRtp(data, frameNumber),(address,port))
 				except:
 					print("Connection Error")
+					break
 					#print '-'*60
 					#traceback.print_exc(file=sys.stdout)
 					#print '-'*60
@@ -175,7 +178,7 @@ class ServerWorker:
 		"""Send RTSP reply to the client."""
 		if code == self.OK_200:
 			#print "200 OK"
-			reply = 'RTSP/1.0 200 OK\nCSeq: ' + seq + '\nSession: ' + str(self.clientInfo['session'])
+			reply = 'RTSP/1.0 200 OK\nCSeq: ' + seq + '\nSession: ' + str(self.clientInfo['session']) + '\n'
 			connSocket = self.clientInfo['rtspSocket'][0]
 			connSocket.send(reply.encode())
 		
@@ -184,12 +187,18 @@ class ServerWorker:
 			print("404 NOT FOUND")
 			#Fill in start 
 			# send a 404 NOT FOUND message back to client if the the file is not found
+			reply = '404 NOT FOUND\n'
+			connSocket = self.clientInfo['rtspSocket'][0]
+			connSocket.send(reply.encode())
 			#Fill in end
 			
 		elif code == self.CON_ERR_500:
 			print("500 CONNECTION ERROR")
 			#Fill in start 
 			# send a 500 CONNECTION ERROR message back to client if there is a connection error
+			reply = '500 CONNECTION ERROR'
+			connSocket = self.clientInfo['rtspSocket'][0]
+			connSocket.send(reply.encode())
 			#Fill in end
 			
 
